@@ -1,6 +1,12 @@
 ﻿
-def show(message):
-    print(message)
+def addstr(msg):
+    print(msg)
 
-def getline():
-    return input(">")
+def startinput():
+    pass
+
+def stopinput():
+    pass
+
+def deny(msg):
+    pass

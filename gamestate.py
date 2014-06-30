@@ -1,60 +1,98 @@
 ﻿
-from output import show, getline
-from actions import actions, ParseError
+import output
+from types import MethodType
 
 class Gamestate(object):
     def __init__(self):
-        self.hosts = []
+        self.actions = {}
+        
+        self.hosts = {}
+        
+        self.check = {}
+        self.carryout = {}
+        self.report = {}
+        
         self.before = {}
+        self.instead = {}
         self.after = {}
+        
+        self.atinput = None
+        self.atparse = None
+        self.atprompt = None
+        
         self.current = None
         self.running = False
     
     def turn(self):
-        print(self.current.name, end="")
-        argv = getline()
-        if argv == "":
-            return
-        argv = argv.split(" ")
+        # invoke prompt rule, i.e. print the prompt
+        self.atprompt()
         
-        if argv[0] not in actions:
-            show("Unknown command: {}".format(argv[0]))
-            return
+        # remembers cursor location for subsequent deny()
+        output.startinput()
         
-        act = None
-        try:
-            act = actions[argv[0]].parse(self, argv)
-        except ParseError as err:
-            show(err.message)
+        # invoke input rule, i.e. handle user typing
+        line = self.atinput()
+        
+        # remembers cursor location again for subsequent deny()
+        output.stopinput()
+        
+        if argv == line:
+            return
+        argv = line.split()
+        
+        # invoke parse rule, i.e. construct appropriate action
+        act = self.atparse(argv)
+        if not act:
             return
         
         self.perform(act)
     
     def perform(self, action, silent=False):
-        if action.__class__ in self.before:
-            self.before[action.__class__](action)
+        # 1: before
+        for rule in self.before.get(type(action), []):
+            rule(action)
         
         if action.cancelled:
-            return False
+            return action.success
         
-        if action in self.before:
-            self.before[action](action)
+        for rule in self.before.get(action, []):
+            rule(action)
         
         if action.cancelled:
-            return False
+            return action.success
         
-        if not action.success:
-            action.perform(self)
-        action.success = True
+        # 2: check
+        action.check()
         
-        if not silent:
-            show(action.successmessage())
+        if action.cancelled:
+            return action.success
         
-        if action in self.after:
-            self.after[action](action)
+        # 3: instead
+        if action in self.instead:
+            action.cancelled = True
+            for rule in self.instead[action]:
+                rule(action)
+        elif type(action) in self.instead:
+            action.cancelled = True
+            for rule in self.instead[type(action)]:
+                rule(action)
         
-        if action.__class__ in self.after:
-            self.after[action.__class__](action)
+        if action.cancelled:
+            return action.success
+        
+        # 4: perform
+        action.carryout()
+        
+        # 5: report
+        if action.success and not silent:
+            action.report()
+        
+        # 6: after
+        for rule in self.after.get(action, []):
+            rule(action)
+        
+        for rule in self.after.get(type(action), []):
+            rule(action)
         
         return action.success
     
@@ -63,25 +101,62 @@ class Gamestate(object):
         while self.running:
             self.turn()
     
-    def deny(self, msg):
-        show(msg)
+    def unlock(self, actiontype):
+        self.actions[actiontype.name] = actiontype
     
     def triggerbefore(self, action):
+        if action not in self.before:
+            self.before[action] = []
+        
         def register(func):
-            self.before[action] = func
+            self.before[action].append(func)
             return func
         return register
     
-    def disablebefore(self, action):
+    def disablebefore(self, action, func):
         if action in self.before:
-            del self.before[action]
+            self.before[action].remove(func)
+    
+    def triggerinstead(self, action):
+        if action not in self.instead:
+            self.instead[action] = []
+        
+        def register(func):
+            self.instead[action].append(func)
+            return func
+        return register
+    
+    def disableinstead(self, action, func):
+        if action in self.instead:
+            self.instead[action].remove(func)
     
     def triggerafter(self, action):
+        if action not in self.before:
+            self.before[action] = []
+        
         def register(func):
-            self.after[action] = func
+            self.after[action].append(func)
             return func
         return register
     
-    def disableafter(self, action):
+    def disableafter(self, action, func):
         if action in self.after:
-            del self.after[action]
+            self.after[action].remove(func)
+    
+    def triggeroninput(self):
+        def register(func):
+            self.atinput = MethodType(func, self)
+            return func
+        return register
+    
+    def triggeronparse(self):
+        def register(func):
+            self.atparse = MethodType(func, self)
+            return func
+        return register
+    
+    def triggeronprompt(self):
+        def register(func):
+            self.atprompt = MethodType(func, self)
+            return func
+        return register
