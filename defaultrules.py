@@ -9,7 +9,7 @@ state = Gamestate()
 
 prompt = state.triggeronprompt
 parse = state.triggeronparse
-input = state.triggeroninput
+oninput = state.triggeroninput
 
 before = state.triggerbefore
 instead = state.triggerinstead
@@ -43,16 +43,16 @@ disconnect = action("disconnect", Host)
 
 @prompt
 def defaultprompt():
-    output.addstr("{}@{} >".format(state.current.name, state.current.address))
+    output.addmsg("{}@{} >".format(state.current.name, state.current.address))
 
-@input
+@oninput
 def getline():
     return input("")
 
 @parse
 def defaultparse(argv):
     if argv[0] not in state.actions:
-        output.addstr("Error: command {} not found".format(argv[0]))
+        output.addmsg("Error: command {} not found".format(argv[0]))
         return None
     
     actiontype = state.actions[argv[0]]
@@ -65,9 +65,9 @@ def defaultparse(argv):
     
     for i, argtype in enumerate(actiontype.argtypes):
         if argv[i+1] not in pools[argtype]:
-            output.addstr("Error: {} {} not found".format(argtype.name, argv[i+1]))
+            output.addmsg("Error: {} {} not found".format(argtype.name, argv[i+1]))
             return None
-        args.append(pools[argtype][argv[i+1])
+        args.append(pools[argtype][argv[i+1]])
     
     return actiontype(*args)
 
@@ -96,8 +96,8 @@ def doconnect(action):
 
 @report(disconnect)
 def reportdisconnect(action):
-    output.addstr("Disconnected.")
+    output.addmsg("Disconnected.")
 
 @report(connect)
 def reportconnect(action):
-    output.addstr("Successfully connected to {}".format(action.args[0].name))
+    output.addmsg("Successfully connected to {}".format(action.args[0].name))

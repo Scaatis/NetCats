@@ -21,7 +21,7 @@ class action(type):
             raise TypeError("Expected {} arguments, got {}".format(len(argtypes), len(args)))
         
         for i, arg in enumerate(args):
-            if tpye(arg) is not argtypes[i]
+            if tpye(arg) is not argtypes[i]:
                 raise TypeError("Type mismatch for argument {}. Expected {} got {}".format(i, argtypes[i].name, type(arg).name))
             self.args.append(arg)
     
@@ -45,7 +45,7 @@ class action(type):
             return False
         
         for i, arg in enumerate(self.args):
-            if arg is not other.args[i]
+            if arg is not other.args[i]:
                 return False
         
         return True
@@ -55,5 +55,3 @@ class action(type):
         for arg in args:
             h ^ hash(arg)
         return h
-
-connect = action("connect", Host)

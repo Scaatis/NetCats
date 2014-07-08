@@ -98,8 +98,13 @@ class Gamestate(object):
     
     def run(self):
         self.running = True
-        while self.running:
-            self.turn()
+        output.init()
+        try:
+            while self.running:
+                self.turn()
+        except KeyboardInterrupt:
+            pass
+        output.uninit()
     
     def unlock(self, actiontype):
         self.actions[actiontype.name] = actiontype
@@ -143,20 +148,14 @@ class Gamestate(object):
         if action in self.after:
             self.after[action].remove(func)
     
-    def triggeroninput(self):
-        def register(func):
-            self.atinput = MethodType(func, self)
-            return func
-        return register
+    def triggeroninput(self, func):
+        self.atinput = func
+        return func
     
-    def triggeronparse(self):
-        def register(func):
-            self.atparse = MethodType(func, self)
-            return func
-        return register
+    def triggeronparse(self, func):
+        self.atparse = func
+        return func
     
-    def triggeronprompt(self):
-        def register(func):
-            self.atprompt = MethodType(func, self)
-            return func
-        return register
+    def triggeronprompt(self, func):
+        self.atprompt = func
+        return func

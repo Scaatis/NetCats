@@ -5,7 +5,7 @@ class Host(object):
         self.address = address
         self.files = sorted(files)
         self.files = sorted(users)
-        state.hosts.append(self)
+        state.hosts[name] = self
     
     def addfile(self, file):
         self.files.append(file)
