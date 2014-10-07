@@ -36,7 +36,8 @@ class Gamestate(object):
         # remembers cursor location again for subsequent deny()
         output.stopinput()
         
-        if argv == line:
+        #if argv == line:
+        if line == "":
             return
         argv = line.split()
         

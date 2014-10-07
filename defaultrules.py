@@ -47,7 +47,7 @@ def defaultprompt():
 
 @oninput
 def getline():
-    return input("")
+    return output.getline()
 
 @parse
 def defaultparse(argv):
